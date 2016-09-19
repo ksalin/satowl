@@ -1,0 +1,25 @@
+1. Uncompress the SGP4 library to main satowl root directory:
+
+satowl
+|
++---satowl
+|   |
+|   ...
+|
++---sgp4
+|   |
+|   ...
+|
++---simplefw
+|   |
+|   +---simplefw.ino
+|
++---README
+|
+...
+
+The library is available at: ttps://www.danrw.com/sgp4/
+
+2. Then build and apply the arduino firmware at "simplefw" directory.
+
+3. Also go to "satowl" subdirectory and run make there to build the computer side program.

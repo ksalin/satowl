@@ -1,0 +1,23 @@
+SatOwl - A satellite tracking and antenna targetting system
+Copyright (C) 2016 Jussi Salin under GPLv3 license.
+
+Uses SGP4 library available at: https://www.danrw.com/sgp4/
+The library is statically linked and has Apache license.
+
+The system consists of a Arduino firmware and a PC program (that could
+be later ported for smart phones.)
+
+The Arduino part is used for reading tilt
+and magnetometer sensors on an antenna. It also controls two servo
+motors (azimuth and elevation) that change the direction of the antenna.
+
+The PC program is used for calculating movements to target a satellite
+with the antenna and it connects to Arduino over USB or Bluetooth serial
+port. SGP4 algorithm is used to calculate position of a satellite based
+on standard KEPS format data. You need to also give your own location
+(longtitude, latitude and height from sea level.) Integrated GPS could
+be used for that on future Android version. Coordinates don't have to
+be more exact than a city area, so you can use attached script to get
+your coordinate from Google's web service.
+
+Currently the KEPS and own location data is hard coded.
