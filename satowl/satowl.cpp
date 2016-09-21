@@ -4,32 +4,41 @@
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
+#include <SerialStream.h>
 #include "../sgp4/libsgp4/CoordTopocentric.h"
 #include "../sgp4/libsgp4/CoordGeodetic.h"
 #include "../sgp4/libsgp4/Observer.h"
 #include "../sgp4/libsgp4/SGP4.h"
 
 /**
- * Static values - do not change
+ * Some global variables and defines
  */
+using namespace LibSerial;
+SerialStream serial;
 #define MOVE_UP 'u'
 #define MOVE_DOWN 'd'
 #define MOVE_LEFT 'l'
 #define MOVE_RIGHT 'r'
 #define QUERY_POSITION '?'
 #define PRECISION 1.0f
+int uptime;
 
 /**
  * Variables that should be loaded in future from configuration or command line parameters
  */
 
 #define MOCK 1
+//#define SERIAL 1
+#define DEBUG 1
+const char *serialPortDev = "/dev/ttyUSB0";
 
 // Your magnetic declanation fix, for example from http://www.magnetic-declination.com/
 // converted to radians. If not specified, heading is slightly off.
 const float myDeclanation = +0.157f;
 
 // Your location
+
+// Coordinates of Lahti, Finland
 const float myLat = 61.1029709f;
 const float myLng = 26.1691147f;
 const float myHeight = 100.0f; // meters from sea level
@@ -105,19 +114,43 @@ Key
   }
 }*/
 
+void serialReadLine(char *str, int maxLen)
+{
+  int pos = 0;
+  char *chr;
+  do
+  {
+    serial >> chr;
+    str[pos] = *chr;
+    pos++;
+  }
+  while((*chr != '\n') && (pos < maxLen));
+  printf("Received line: %s", str);
+}
+
 bool getPosition(float *azi, float *ele)
 {
-#ifdef MOCK
+#ifndef SERIAL
   *azi = 160;
   *ele = 10;
   return true;
+#else
+  serial << '?';
+  char line[50];
+  #if (DEBUG >= 3)
+  serialReadLine(&line[0], 50);
+  #endif
+  scanf(&line[0], "%f %f", azi, ele);
 #endif
 }
 
 bool movePosition(char cmd)
 {
+#if (DEBUG >= 3)
   std::cout << "Movement: " << cmd << std::endl;
-#ifdef MOCK
+#endif
+#ifdef SERIAL
+  serial << cmd;
 #endif
 }
 
@@ -131,11 +164,34 @@ int main(void)
 
   std::cout << tle << std::endl;
 
+#ifdef SERIAL
+  serial.Open(serialPortDev);
+  if(!serial.IsOpen())
+  {
+    printf("Could not open serial port %s!\n", serialPortDev);
+    return -1;
+  }
+  serial.SetBaudRate(SerialStreamBuf::BAUD_9600);
+  serial.SetCharSize(SerialStreamBuf::CHAR_SIZE_8);
+  serial.SetNumOfStopBits(1);
+  serial.SetParity(SerialStreamBuf::PARITY_NONE);
+#endif
+
+#ifdef MOCK
+  printf("WARNING: Mock satellite date simulation enabled\n");
+#endif
+#ifndef SERIAL
+  printf("WARNING: Serial port support not enabled\n");
+#endif
+
+  uptime = 0;
   while (true)
   {
     // Get satellite position and our direction to it
 #ifdef MOCK
-    DateTime now = DateTime(2016, 9, 18, 15, 50, 00);
+    // Start time just a bit before Saudi 50 flies over southern Finland
+    DateTime now = DateTime(2016, 9, 18, 15, 46, 00);
+    now = now.AddSeconds(uptime * 10);
 #else
     DateTime now = DateTime::Now(true);
 #endif
@@ -163,7 +219,9 @@ int main(void)
         // Check real position of the antenna
         if (getPosition(&myAzimuth, &myElevation))
         {
+          #if (DEBUG >= 2)
           std::cout << "My azimuth and elevation: " << myAzimuth << ", " << myElevation << std::endl;
+          #endif
           //std::cout << "Sat azimuth and elevation: " << topo.azimuth << ", " << topo.elevation << std::endl;
           // Calculate differences from position to wanted position
           float dAzimuth = myAzimuth - Util::RadiansToDegrees(topo.azimuth);
@@ -188,7 +246,12 @@ int main(void)
         usleep(100000);
       }
     }
-  };
+    uptime++;
+    printf("Uptime: %i seconds\n", uptime);
+  }
 
+#ifdef SERIAL
+  serial.Close();
+#endif
   return 0;
 }

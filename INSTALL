@@ -18,8 +18,10 @@ satowl
 |
 ...
 
-The library is available at: ttps://www.danrw.com/sgp4/
+The library is available at: https://www.danrw.com/sgp4/
 
-2. Then build and apply the arduino firmware at "simplefw" directory.
+2. Install libboost-dev and libserial-dev dependencies on Debian or Ubuntu, or how you would install them on your OS.
 
-3. Also go to "satowl" subdirectory and run make there to build the computer side program.
+3. Go to "satowl" subdirectory and run make there to build the computer side program.
+
+4. Then compile and upload the arduino firmware at "simplefw" directory using Arduino IDE.
